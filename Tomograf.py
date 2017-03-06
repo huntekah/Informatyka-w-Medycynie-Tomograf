@@ -1,13 +1,15 @@
 #!/usr/bin/python
 import sys
-
-import picture2sinogram from plikKrzysia
-import sinogram2picture from plikAgi
+#from plikKrzysia import picture2sinogram
+#from plikAgi import sinogram2picture
+import plikKrzysia
+import plikAgi
 
 
 class Result:
-    raw = []
-    improved = []
+    def __init__(self, picture = []):
+        self.raw = picture
+        self.imporved = picture
 
 class Picture_struct:
     'Structure of our picture'
