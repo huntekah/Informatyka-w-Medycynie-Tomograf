@@ -25,9 +25,13 @@ def picture2sinogram(picture, **kwargs):
 
     # poruszaj emiterem 360/n razy o kąt alpha i zbierz próbki promieni.
     for i in range(0, 360, alpha):
-        x0 = r * np.cos(i * np.pi / 180)
-        y0 = r * np.sin(i * np.pi / 180)
-        x1 = r * np.cos( i + 180)
+        for detector in range(0, detector_amount):
+            x0 = r * np.cos(i * np.pi / 180)
+            y0 = r * np.sin(i * np.pi / 180)
+
+            x1 = r * np.cos((i + 180 - width / 2 + detector * (width / (detector_amount - 1))) * np.pi / 180)
+            y1 = r * np.sin((i + 180 - width / 2 + detector * (width / (detector_amount - 1))) * np.pi / 180)
+
         pass
 
     # TODO do transformations
