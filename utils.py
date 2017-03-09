@@ -17,7 +17,7 @@ def bresenhams_line(x1, y1, x2, y2):
     if(dx >= dy):
         #dx >> 1
         e = dx/2
-        for i in range(0,dx):
+        for i in range(0, int(dx)):
             x = x+kx
             e = e - dy
             #K11
@@ -28,11 +28,11 @@ def bresenhams_line(x1, y1, x2, y2):
     #K16
     else:
         e = dy / 2
-        for i in range(0,dy):
+        for i in range(0, int(dy)):
             y = y+kx
             e = e-dx
             if(e < 0):
                 x = x+kx
                 e = e+dy
-            line.append[x,y]
+            line.append([x,y])
     return line
