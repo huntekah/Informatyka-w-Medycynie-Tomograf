@@ -41,19 +41,20 @@ def picture2sinogram(picture, **kwargs):
             x0 = r * np.cos(i * np.pi / 180)
             y0 = r * np.sin(i * np.pi / 180)
 
-            x1 = r * np.cos((i + 180 - width / 2 + detector * (width / (detector_amount - 1))) * np.pi / 180)
-            y1 = r * np.sin((i + 180 - width / 2 + detector * (width / (detector_amount - 1))) * np.pi / 180)
+            x1 = r * np.cos((i + 180 - (width / 2) + detector * (width / (detector_amount - 1))) * np.pi / 180)
+            y1 = r * np.sin((i + 180 - (width / 2) + detector * (width / (detector_amount - 1))) * np.pi / 180)
 
             x0 = int(x0) + np.floor(picture_size / 2)
             x1 = int(x1) + np.floor(picture_size / 2)
             y0 = int(y0) + np.floor(picture_size / 2)
             y1 = int(y1) + np.floor(picture_size / 2)
 
-            # if(np.sqrt(np.power(x0-x1,2) + np.power(y0-y1,2)) < 512 ):
-            #    print(x0,y0,x1,y1)
             line = bresenhams_line(x0, y0, x1, y1)
 
             pixel = get_pixel_value(picture, line)
+
+            assert pixel.maximum != 0
+
             sinogram[-1].append(pixel.normalized)
             lines[-1].append([x0, y0, x1, y1])
 
@@ -64,10 +65,10 @@ def get_pixel_value(picture, line):
     pixel = Pixel()
     for pos in line:
         if pos[0] >= 0 and pos[1] >= 0 and pos[0] < len(picture) and pos[1] < len(picture):
-            pixel.raw = pixel.raw + float(picture[pos[0], pos[1]])
-            pixel.maximum = pixel.maximum + 1
+            pixel.raw += float(picture[pos[0], pos[1]])
+            pixel.maximum += 1
     if pixel.maximum != 0:
         pixel.normalized = pixel.raw / pixel.maximum
-    else:
-        print(line[0][0], line[0][1], line[-1][1], line[-1][0])
+        # else:
+        #     print(line[0][0], line[0][1], line[-1][1], line[-1][0])
     return pixel
