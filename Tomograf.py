@@ -1,7 +1,5 @@
 #!/usr/bin/python
 import sys
-# from plikKrzysia import picture2sinogram
-# from plikAgi import sinogram2picture
 import plikKrzysia
 import plikAgi
 from matplotlib import pyplot as plt
@@ -32,19 +30,7 @@ class Picture_struct:
         plots[0].imshow(self.oryginal, cmap='gray')
         plots[1].imshow(self.sinogram, cmap='gray')
         plt.show()
-        # for i in range(len(self.lines)):
-        #     fig, plots = plt.subplots(1, 2)
-        #     plots[0].imshow(self.oryginal, cmap='gray')
-        #     plots[1].imshow(self.sinogram, cmap='gray')
-        #     for line in self.lines[i]:
-        #         line_ = plikKrzysia.bresenhams_line(line[2], line[3], line[0], line[1])
-        #         x = [x[0] for x in line_]
-        #         y = [x[1] for x in line_]
-        #         plots[0].scatter(x=x, y=y, c='red', s=4)
-        #     plt.draw()
-        #     plt.show()
-        #     print(i)
-            #plots[0].remove()
+
         return self.sinogram
 
     def sinogram2picture(self):
@@ -60,6 +46,7 @@ class Picture_struct:
 def tomograf(picture_):
     picture = Picture_struct(picture_)
     picture.picture2sinogram()
+    #TODO
     #    picture.filtered()
     #    picture.sinogram2picture()
     return picture

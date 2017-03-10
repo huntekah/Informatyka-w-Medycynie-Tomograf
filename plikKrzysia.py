@@ -53,7 +53,6 @@ def picture2sinogram(picture, **kwargs):
 
             pixel = get_pixel_value(picture, line)
 
-            assert pixel.maximum != 0
 
             sinogram[-1].append(pixel.normalized)
             lines[-1].append([x0, y0, x1, y1])
@@ -67,8 +66,6 @@ def get_pixel_value(picture, line):
         if pos[0] >= 0 and pos[1] >= 0 and pos[0] < len(picture) and pos[1] < len(picture):
             pixel.raw += float(picture[pos[0], pos[1]])
             pixel.maximum += 1
-    if pixel.maximum != 0:
-        pixel.normalized = pixel.raw / pixel.maximum
-        # else:
-        #     print(line[0][0], line[0][1], line[-1][1], line[-1][0])
+    assert pixel.maximum != 0
+    pixel.normalized = pixel.raw / pixel.maximum
     return pixel

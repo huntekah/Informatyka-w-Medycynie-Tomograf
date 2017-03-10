@@ -3,7 +3,6 @@ def bresenhams_line(x1, y1, x2, y2):
     http://eduinf.waw.pl/inf/utils/002_roz/2008_06.php'''
 
     line = []
-    # result = x if a > b else y
     kx = 1 if x1 <= x2 else -1
     ky = 1 if y1 <= y2 else -1
 
@@ -13,19 +12,15 @@ def bresenhams_line(x1, y1, x2, y2):
     x = x1
     y = y1
     line.append([x, y])
-    # K06
     if (dx >= dy):
-        # dx >> 1
         e = dx / 2
         for i in range(0, int(dx)):
             x = x + kx
             e = e - dy
-            # K11
             if (e < 0):
                 y = y + ky
                 e = e + dx
             line.append([x, y])
-    # K16
     else:
         e = dy / 2
         for i in range(0, int(dy)):
