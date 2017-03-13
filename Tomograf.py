@@ -9,7 +9,7 @@ from skimage import data
 class Result:
     def __init__(self, picture=[]):
         self.raw = picture
-        self.imporved = picture
+        self.improved = picture
 
 
 class Picture_struct:

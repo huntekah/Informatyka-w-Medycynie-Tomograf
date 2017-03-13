@@ -1,4 +1,5 @@
 #!/usr/bin/python
+#-*- coding: utf-8 -*-
 from utils import bresenhams_line
 import numpy as np
 
