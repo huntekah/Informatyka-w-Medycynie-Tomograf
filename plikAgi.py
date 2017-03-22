@@ -60,17 +60,6 @@ def filtering_sinogram(sinogram):
     number_of_detectors = sinogram_shape[1]
     
     filtered = np.zeros((number_of_projections, number_of_detectors))
-    
-    mask = np.zeros((number_of_projections, number_of_detectors))
-    
-    for projection in range (0, number_of_projections, 1):
-        for detector in range (0, number_of_detectors, 1):
-            if (detector == 0):
-                mask[projection][detector] = 1
-            if (detector % 2 == 0):
-                mask[projection][detector] = 0
-            else:
-                mask[projection][detector] = (-4/(np.pi*np.pi))/(detector*detector)
      
     for projection in range (0, number_of_projections, 1):
         for detector in range (0, number_of_detectors, 1):
@@ -81,12 +70,8 @@ def filtering_sinogram(sinogram):
                     if(m == 0):
                         filtered[projection][detector] += sinogram[projection][detector+m]
             else:
-                filtered[projection][detector] += sinogram[projection][detector]
-            #print ("f[", projection, "][", detector, "]: " , filtered[projection][detector])
-    print("SINGORAM:")
-    #print(sinogram[0:5][0:5])
-    print("FILTERED SINOGRAM:")
-    #print(filtered[0:5][0:5])
+                filtered[projection][detector] += sinogram[projection][detector]*0.1
+                
     return filtered
 
 def filtering_picture(img) :
