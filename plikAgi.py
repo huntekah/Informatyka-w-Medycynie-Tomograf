@@ -1,12 +1,49 @@
 #!/usr/bin/python
 import numpy as np
+from math import floor
 from utils import bresenhams_line
 from matplotlib import pyplot as plt
+from skimage.morphology import disk
 import skimage.morphology as mp
-from skimage import img_as_float, img_as_ubyte
+from skimage import img_as_float, img_as_ubyte, filters
+import scipy.signal as sig
 
 def sinogram2picture(picture, sinogram, lines):
-    #TODO transformations
+    
+    picture_shape = np.shape(picture)
+    width = picture_shape[0]
+    height = picture_shape[1]
+    
+    sinogram_shape = np.shape(sinogram)
+    number_of_projections = sinogram_shape[0]
+    number_of_detectors = sinogram_shape[1]
+    
+    reconstructed = np.zeros(shape = picture_shape)
+    helper = np.zeros(shape = picture_shape)
+     
+    for projection in range (0, number_of_projections, 1):
+        for detector in range (0, number_of_detectors, 1):
+            x0, y0, x1, y1 = lines[projection][detector]
+            line = bresenhams_line(x0, y0, x1, y1)
+            value = sinogram[projection][detector]
+            for i in range (0, len(line), 1):
+                    x, y = line[i]
+                    if x >= 0 and y >= 0 and x < width and y < height:
+                        reconstructed[x][y] += value
+                        helper[x][y] += 1
+         
+        if (projection%10 == 0):
+            fig, plots = plt.subplots(1, 2)
+            plots[0].imshow(picture, cmap='gray')
+            plots[1].imshow(normalizing_picture(reconstructed, helper), cmap='gray')
+            plt.show()
+     
+    normalized = normalizing_picture(reconstructed, helper)
+
+    return normalized
+
+def filtered_sinogram2picture(picture, sinogram, lines):
+    
     picture_shape = np.shape(picture)
     width = picture_shape[0]
     height = picture_shape[1]
@@ -18,15 +55,19 @@ def sinogram2picture(picture, sinogram, lines):
     reconstructed = np.zeros(shape = picture_shape)
     helper = np.zeros(shape = picture_shape)
     
-    print("Chce pofiltrować")
     filtered_sinogram = filtering_sinogram(sinogram)
+    
+    # obserwacje
     fig, plots = plt.subplots(1, 2)
     plots[0].imshow(picture, cmap='gray')
     plots[1].imshow(filtered_sinogram, cmap='gray')
     plt.show()
-    print("Powinnam już skończyć filtrować")
+    fig, plots = plt.subplots(1, 2)
+    plots[0].plot(range(number_of_detectors), sinogram[0])
+    plots[1].plot(range(number_of_detectors), filtered_sinogram[0])
+    plt.show()
     
-    # k-ta projekcja
+    
     for projection in range (0, number_of_projections, 1):
         for detector in range (0, number_of_detectors, 1):
             x0, y0, x1, y1 = lines[projection][detector]
@@ -37,19 +78,14 @@ def sinogram2picture(picture, sinogram, lines):
                     if x >= 0 and y >= 0 and x < width and y < height:
                         reconstructed[x][y] += value
                         helper[x][y] += 1
-                        
-#        reconstructed = filtering(reconstructed)
         
         if (projection%10 == 0):
             fig, plots = plt.subplots(1, 2)
             plots[0].imshow(picture, cmap='gray')
-            plots[1].imshow(normalizing(reconstructed, helper), cmap='gray')
+            plots[1].imshow(normalizing_picture(reconstructed, helper), cmap='gray')
             plt.show()
-        
-
-    print("lol")
     
-    normalized = normalizing(reconstructed, helper)
+    normalized = normalizing_picture(reconstructed, helper)
     #filtered = filtering_picture(normalized)
     return normalized
 
@@ -60,29 +96,47 @@ def filtering_sinogram(sinogram):
     number_of_detectors = sinogram_shape[1]
     
     filtered = np.zeros((number_of_projections, number_of_detectors))
-     
+    
+    # maska jednowymiarowa
+    #mask_size = floor(number_of_detectors/2)
+    mask_size = 5
+    mask = np.zeros(mask_size)
+    center = floor(mask_size/2)
+    for i in range(0, mask_size, 1):
+        k = i - center
+        if k % 2 != 0:
+            mask[i] = (-4/np.pi**2)/k**2
+    mask[center] = 1
+    
+    # splot każdej projekcji z naszą maską
     for projection in range (0, number_of_projections, 1):
-        for detector in range (0, number_of_detectors, 1):
-            if(detector != 0 and detector != number_of_detectors-1):
-                for m in range (-1, 2, 1):
-                    if(m == -1 or m == 1):
-                        filtered[projection][detector] += sinogram[projection][detector+m]*(-4/(np.pi*np.pi))
-                    if(m == 0):
-                        filtered[projection][detector] += sinogram[projection][detector+m]
-            else:
-                filtered[projection][detector] += sinogram[projection][detector]*0.1
-                
+        filtered[projection] = sig.convolve(sinogram[projection], mask, mode = 'same')
+    
     return filtered
 
 def filtering_picture(img) :
-    img = img_as_ubyte(img)
-    mean = np.mean(img)
-    binary = (img > mean*1.05) * 255
-    binary = np.uint8(binary)
-    return binary
-                
+    #new = filters.median(img, disk(5))
+    new = mp.erosion(img)
+    return new
 
-def normalizing(reconstructed, helper):
+def normalizing_sinogram(sinogram):
+    #for projection in range (0, number_of_projections, 1):
+    #    for detector in range (0, number_of_detectors, 1):
+    #        if (filtered[projection][detector] < 0):
+    #            filtered[projection][detector] = 0
+    
+    perc = 3
+    MIN = np.percentile(sinogram, perc)
+    MAX = np.percentile(sinogram, 100-perc)
+
+    norm = (sinogram - MIN) / (MAX - MIN)
+    norm[norm[:,:] > 1] = 1
+    norm[norm[:,:] < 0] = 0
+    
+    return norm
+    
+
+def normalizing_picture(reconstructed, helper):
     normalized = np.copy(reconstructed)
     picture_shape = np.shape(normalized)
     width = picture_shape[0]
