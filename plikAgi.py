@@ -96,7 +96,12 @@ def filtered_sinogram2picture(picture, sinogram, lines):
         #    plots[1].imshow(normalizing_picture(reconstructed, helper), cmap='gray')
         #    plt.show()
     
+    
     reconstructed = normalizing_picture(reconstructed, helper)
+    fig, plots = plt.subplots(1, 2)
+    plots[0].imshow(picture, cmap='gray')
+    plots[1].imshow(reconstructed, cmap='gray')
+    plt.show()
     reconstructed = filtering_picture(reconstructed)
     return reconstructed
 
@@ -130,8 +135,8 @@ def filtering_picture(img) :
     perc = 10
     MIN = np.percentile(img, perc)
     MAX = np.percentile(img, 100-perc)
-    normalizing(img, MIN, MAX)
-    new = mp.erosion(img)
+    new = normalizing(img, MIN, MAX)
+    #new = mp.erosion(img)
     return new
 
 def normalizing_sinogram(sinogram):
@@ -139,13 +144,13 @@ def normalizing_sinogram(sinogram):
     # pierwsza normalizacja do zakresu 0-1
     MIN = sinogram.min()
     MAX = sinogram.max()
-    normalizing(norm, MIN, MAX)
+    norm = normalizing(sinogram, MIN, MAX)
     
     # druga normalizacja do "rozciągnięcia" histogramu
     perc = 10
     MIN = np.percentile(norm, perc)
     MAX = np.percentile(norm, 100-perc)
-    normalizing(norm, MIN, MAX)
+    norm = normalizing(norm, MIN, MAX)
     
     # korekcja gamma
     gamma = 1/2.2
