@@ -65,7 +65,7 @@ def get_pixel_value(picture, line):
     pixel = Pixel()
     for pos in line:
         if pos[0] >= 0 and pos[1] >= 0 and pos[0] < len(picture) and pos[1] < len(picture):
-            pixel.raw += float(picture[pos[0], pos[1]])
+            pixel.raw += float(picture[int(pos[0]),int(pos[1])])
             pixel.maximum += 1
     assert pixel.maximum != 0
     pixel.normalized = pixel.raw / pixel.maximum
