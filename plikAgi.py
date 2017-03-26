@@ -12,107 +12,13 @@ from sklearn.metrics import mean_squared_error
 
 
 def sinogram2picture(picture, sinogram, lines):
-    
-    picture_shape = np.shape(picture)
-    width = picture_shape[0]
-    height = picture_shape[1]
-    
-    sinogram_shape = np.shape(sinogram)
-    number_of_projections = sinogram_shape[0]
-    number_of_detectors = sinogram_shape[1]
-    
-    images = []
-    iterator = 0
-    mse = np.zeros(ceil(number_of_projections/10)+1)
-    
-    reconstructed = np.zeros(shape = picture_shape)
-    helper = np.zeros(shape = picture_shape)
-     
-    for projection in range (0, number_of_projections, 1):
-        for detector in range (0, number_of_detectors, 1):
-            x0, y0, x1, y1 = lines[projection][detector]
-            line = bresenhams_line(x0, y0, x1, y1)
-            value = sinogram[projection][detector]
-            for i in range (0, len(line), 1):
-                    x, y = line[i]
-                    if x >= 0 and y >= 0 and x < width and y < height:
-                        reconstructed[int(x)][int(y)] += value
-                        helper[int(x)][int(y)] += 1
-         
-        if (projection%10 == 0):
-            fragment = normalizing_picture(reconstructed, helper)
-            images.append(fragment)
-            mse[iterator] = mean_squared_error(picture, fragment)
-            iterator += 1
-     
-    reconstructed = normalizing_picture(reconstructed, helper)
-    images.append(reconstructed)
-    mse[iterator] = mean_squared_error(picture, reconstructed)
-    iterator += 1
-    save_plot(iterator, mse, 'mse_s2p')
-    imageio.mimsave('sin2pic.gif', images)
-
+    reconstructed = sin2pic(picture, sinogram, lines, 'sin2pic.gif', 'mse_s2p')    
     return reconstructed
 
-def filtered_sinogram2picture(picture, sinogram, lines):
-    
-    picture_shape = np.shape(picture)
-    width = picture_shape[0]
-    height = picture_shape[1]
-    
-    sinogram_shape = np.shape(sinogram)
-    number_of_projections = sinogram_shape[0]
-    number_of_detectors = sinogram_shape[1]
-    
-    images = []
-    iterator = 0
-    mse = np.zeros(ceil(number_of_projections/10)+2)
-    
-    reconstructed = np.zeros(shape = picture_shape)
-    helper = np.zeros(shape = picture_shape)
-    
-    new_sinogram = filtering_sinogram(sinogram)
-    
-    # obserwacje
-    plot_images(picture,new_sinogram)
-    plot_diagram(sinogram, new_sinogram)
-    
-    new_sinogram = normalizing_sinogram(new_sinogram)
-    
-    # obserwacje
-    plot_images(picture,new_sinogram)
-    plot_diagram(sinogram, new_sinogram)
-    
-    for projection in range (0, number_of_projections, 1):
-        for detector in range (0, number_of_detectors, 1):
-            x0, y0, x1, y1 = lines[projection][detector]
-            line = bresenhams_line(x0, y0, x1, y1)
-            value = new_sinogram[projection][detector]
-            for i in range (0, len(line), 1):
-                    x, y = line[i]
-                    if x >= 0 and y >= 0 and x < width and y < height:
-                        reconstructed[int(x)][int(y)] += value
-                        helper[int(x)][int(y)] += 1
-        
-        if (projection%10 == 0):
-            fragment = normalizing_picture(reconstructed, helper)
-            images.append(fragment)
-            mse[iterator] = mean_squared_error(picture, fragment)
-            iterator += 1
-    
-    
-    reconstructed = normalizing_picture(reconstructed, helper)
-    images.append(reconstructed)
-    mse[iterator] = mean_squared_error(picture, reconstructed)
-    iterator += 1
-    plot_images(picture,reconstructed)
-    reconstructed[reconstructed[:,:] < 0] = 0
-    #reconstructed = filtering_picture(reconstructed)
-    #images.append(reconstructed)
-    mse[iterator] = mean_squared_error(picture, reconstructed)
-    iterator += 1
-    imageio.mimsave('fil_sin2pic.gif', images)
-    save_plot(iterator, mse, 'mse_fs2p')
+def filtered_sinogram2picture(picture, sinogram, lines):    
+    sinogram = filtering_sinogram(sinogram)
+    sinogram = normalizing_sinogram(sinogram) 
+    reconstructed = sin2pic(picture, sinogram, lines, 'fil_sin2pic.gif', 'mse_fs2p')    
     return reconstructed
 
 def filtering_sinogram(sinogram):
@@ -122,10 +28,17 @@ def filtering_sinogram(sinogram):
     number_of_detectors = sinogram_shape[1]
     
     filtered = np.zeros((number_of_projections, number_of_detectors))
+    mask = do_mask(number_of_detectors)
     
+    # splot każdej projekcji z naszą maską
+    for projection in range (0, number_of_projections, 1):
+        filtered[projection] = sig.convolve(sinogram[projection], mask, mode = 'same', method='direct')
+    
+    return filtered
+
+def do_mask(detectors):
     # maska jednowymiarowa
-    mask_size = floor(number_of_detectors/5)
-    #mask_size = 3
+    mask_size = floor(detectors/5)
     mask = np.zeros(mask_size)
     center = floor(mask_size/2)
     for i in range(0, mask_size, 1):
@@ -133,12 +46,7 @@ def filtering_sinogram(sinogram):
         if k % 2 != 0:
             mask[i] = (-4/np.pi**2)/k**2
     mask[center] = 1
-    
-    # splot każdej projekcji z naszą maską
-    for projection in range (0, number_of_projections, 1):
-        filtered[projection] = sig.convolve(sinogram[projection], mask, mode = 'same', method='direct')
-    
-    return filtered
+    return mask
 
 def filtering_picture(img) :
     #new = filters.median(img, disk(2))
@@ -216,3 +124,58 @@ def plot_diagram(img1, img2):
 def save_plot(x, y, filename):
     plt.plot(range(x), y)
     plt.savefig(filename)  
+    
+def sin2pic(picture, sinogram, lines, filename1, filename2):
+    
+    picture_shape = np.shape(picture)
+    width = picture_shape[0]
+    height = picture_shape[1]
+    
+    sinogram_shape = np.shape(sinogram)
+    number_of_projections = sinogram_shape[0]
+    number_of_detectors = sinogram_shape[1]
+    
+    images = []
+    iterator = 0
+    mse = np.zeros(ceil(number_of_projections/10)+2)
+    
+    reconstructed = np.zeros(shape = picture_shape)
+    helper = np.zeros(shape = picture_shape)
+    
+    # obserwacje
+    plot_images(picture, sinogram)
+    plot_diagram(sinogram, sinogram)
+    
+    for projection in range (0, number_of_projections, 1):
+        for detector in range (0, number_of_detectors, 1):
+            x0, y0, x1, y1 = lines[projection][detector]
+            line = bresenhams_line(x0, y0, x1, y1)
+            value = sinogram[projection][detector]
+            for i in range (0, len(line), 1):
+                    x, y = line[i]
+                    if x >= 0 and y >= 0 and x < width and y < height:
+                        reconstructed[int(x)][int(y)] += value
+                        helper[int(x)][int(y)] += 1
+        
+        if (projection%10 == 0):
+            fragment = normalizing_picture(reconstructed, helper)
+            fragment[fragment[:,:] < 0] = 0
+            images.append(fragment)
+            mse[iterator] = mean_squared_error(picture, fragment)
+            iterator += 1
+    
+    reconstructed = normalizing_picture(reconstructed, helper)
+    images.append(reconstructed)
+    mse[iterator] = mean_squared_error(picture, reconstructed)
+    iterator += 1
+    plot_images(picture,reconstructed)
+    reconstructed[reconstructed[:,:] < 0] = 0
+    #reconstructed = filtering_picture(reconstructed)
+    images.append(reconstructed)
+    mse[iterator] = mean_squared_error(picture, reconstructed)
+    iterator += 1
+    imageio.mimsave(filename1, images)
+    save_plot(iterator, mse, filename2)
+    return reconstructed
+
+    
