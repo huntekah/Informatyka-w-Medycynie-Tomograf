@@ -88,18 +88,22 @@ def save_plot(x, y, filename):
     
 def sin2pic(picture, sinogram, lines, filename1, filename2, filtr):
     
+    # wymiary zdjęcia końcowego
     picture_shape = np.shape(picture)
     width = picture_shape[0]
     height = picture_shape[1]
     
+    # dane o projekcjach i detektorach
     sinogram_shape = np.shape(sinogram)
     number_of_projections = sinogram_shape[0]
     number_of_detectors = sinogram_shape[1]
     
+    # dane do tworzenia gifa i statystyk
     images = []
     iterator = 0
     mse = np.zeros(ceil(number_of_projections/10)+1)
     
+    # dane do rekonstrukcji zdjęcia
     reconstructed = np.zeros(shape = picture_shape)
     helper = np.zeros(shape = picture_shape)
     
@@ -107,6 +111,7 @@ def sin2pic(picture, sinogram, lines, filename1, filename2, filtr):
     plot_images(picture, sinogram)
     plot_diagram(sinogram, sinogram)
     
+    # rekonstrukcja zdjęcia
     for projection in range (0, number_of_projections, 1):
         for detector in range (0, number_of_detectors, 1):
             x0, y0, x1, y1 = lines[projection][detector]
@@ -117,6 +122,8 @@ def sin2pic(picture, sinogram, lines, filename1, filename2, filtr):
                     if x >= 0 and y >= 0 and x < width and y < height:
                         reconstructed[int(x)][int(y)] += value
                         helper[int(x)][int(y)] += 1
+                        
+        # tworzenie gifa i zbieranie statystyk
         fragment = normalizing_picture(reconstructed, helper)
         if (filtr):
             fragment[fragment[:,:] < 0] = 0
@@ -126,6 +133,7 @@ def sin2pic(picture, sinogram, lines, filename1, filename2, filtr):
             mse[iterator] = mean_squared_error(picture, fragment)
             iterator += 1
     
+    # tworzenie gifa i zbieranie statystyk
     fragment = normalizing_picture(reconstructed, helper)
     if (filtr):
         fragment[fragment[:,:] < 0] = 0
@@ -133,7 +141,11 @@ def sin2pic(picture, sinogram, lines, filename1, filename2, filtr):
     images.append(gamma(fragment, 1))
     mse[iterator] = mean_squared_error(picture, fragment)
     iterator += 1
+    
+    # obserwacje
     plot_images(picture,fragment)
+    
+    # tworzenie gifa i zbieranie statystyk
     if (filtr):
         reconstructed = filtering_picture(fragment)
         images.append(gamma(reconstructed, 1))
@@ -143,8 +155,11 @@ def sin2pic(picture, sinogram, lines, filename1, filename2, filtr):
         images.append(gamma(reconstructed, 1))
         mse[iterator] = mean_squared_error(picture, reconstructed)
     iterator += 1
+    
+    # zapis gifa i wykresu ze statystykami
     imageio.mimsave(filename1, images)
     save_plot(iterator, mse, filename2)
+    
     return reconstructed
 
     
