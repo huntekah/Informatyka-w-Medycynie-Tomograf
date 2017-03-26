@@ -18,7 +18,6 @@ def sinogram2picture(picture, sinogram, lines):
 
 def filtered_sinogram2picture(picture, sinogram, lines):    
     sinogram = filtering_sinogram(sinogram)
-    sinogram = normalizing_sinogram(sinogram) 
     reconstructed = sin2pic(picture, sinogram, lines, 'fil_sin2pic.gif', 'mse_fs2p', True)    
     return reconstructed
 
@@ -50,62 +49,15 @@ def do_mask(detectors):
     return mask
 
 def filtering_picture(img) :
-    #new = filters.median(img, disk(2))
     new = filters.gaussian_filter(img, sigma=1)
-
-    #new = gamma(new, 1/2.2)
-    MIN = new.min()
-    MAX = new.max()
-    print("max ", MAX);
-    MAX = 0.2
-    #new = normalizing(new, MIN, MAX)
-    new = rescale_intensity(new)
+    #new = rescale_intensity(new)
     new = mp.dilation(mp.erosion(new))
-    #new = normalizing(new, MIN, MAX)
-    
-    """
-    perc = 10
-    MIN = np.percentile(new, perc)
-    MAX = np.percentile(new, 100-perc)
-    new = normalizing(new, MIN, MAX)
-    new = normalizing(img, 0, 1)
-    new = mp.erosion(img)
-    new = filters.median(new, disk(2))
-    new = filters.gaussian_filter(img, sigma=1)
-    """
-    #new = mp.dilation(mp.erosion(new))
     return new
 
 
 def gamma(img, gamma):
     new = img ** gamma
     return new
-
-def normalizing_sinogram(sinogram):
-    
-    norm = np.copy(sinogram)
-    #norm[norm[:,:] < 0] = 0
-    """
-    minval = 0
-    maxval = sinogram.max()
-    
-    width = np.shape(sinogram)[0]
-    height = np.shape(sinogram)[1]
-    for i in range (0, width, 1):
-        for j in range (0, height, 1):
-            norm[i][j] = (sinogram[i][j] - minval) / (maxval - minval)
-    """
-    # druga normalizacja do "rozciągnięcia" histogramu
-    perc = 5
-    MIN = np.percentile(norm, perc)
-    MAX = np.percentile(norm, 100-perc)
-    #norm = normalizing(norm, MIN, MAX)
-    
-    # korekcja gamma
-    #gamma = 1/2.2
-    #norm = (norm ** gamma)
-   
-    return norm
 
 def normalizing_picture(reconstructed, helper):
     normalized = np.copy(reconstructed)
@@ -117,12 +69,6 @@ def normalizing_picture(reconstructed, helper):
             if helper[i][j] != 0:
                 normalized[i][j] = normalized[i][j]/helper[i][j]
     return normalized
-
-def normalizing(img, minval, maxval):
-    norm = (img - minval) / (maxval - minval)
-    norm[norm[:,:] > 1] = 1
-    norm[norm[:,:] < 0] = 0
-    return norm
 
 def plot_images(img1, img2):
     fig, plots = plt.subplots(1, 2)
@@ -152,7 +98,7 @@ def sin2pic(picture, sinogram, lines, filename1, filename2, filtr):
     
     images = []
     iterator = 0
-    mse = np.zeros(ceil(number_of_projections/10)+2)
+    mse = np.zeros(ceil(number_of_projections/10)+1)
     
     reconstructed = np.zeros(shape = picture_shape)
     helper = np.zeros(shape = picture_shape)
@@ -172,23 +118,30 @@ def sin2pic(picture, sinogram, lines, filename1, filename2, filtr):
                         reconstructed[int(x)][int(y)] += value
                         helper[int(x)][int(y)] += 1
         fragment = normalizing_picture(reconstructed, helper)
-        fragment[fragment[:,:] < 0] = 0
-        images.append(gamma(fragment, 0.3))
-        if (projection%10 == 0):
+        if (filtr):
+            fragment[fragment[:,:] < 0] = 0
+            fragment = rescale_intensity(fragment)
+        images.append(gamma(fragment, 1))
+        if (projection != 0 and projection%10 == 0):
             mse[iterator] = mean_squared_error(picture, fragment)
             iterator += 1
     
-    reconstructed = normalizing_picture(reconstructed, helper)
-    images.append(gamma(reconstructed, 0.3))
-    mse[iterator] = mean_squared_error(picture, reconstructed)
-    iterator += 1
-    plot_images(picture,reconstructed)
+    fragment = normalizing_picture(reconstructed, helper)
     if (filtr):
-        reconstructed[reconstructed[:,:] < 0] = 0
-        reconstructed = filtering_picture(reconstructed)
-    images.append(gamma(reconstructed, 0.3))
-    #images.append(reconstructed)
-    mse[iterator] = mean_squared_error(picture, reconstructed)
+        fragment[fragment[:,:] < 0] = 0
+        fragment = rescale_intensity(fragment)
+    images.append(gamma(fragment, 1))
+    mse[iterator] = mean_squared_error(picture, fragment)
+    iterator += 1
+    plot_images(picture,fragment)
+    if (filtr):
+        reconstructed = filtering_picture(fragment)
+        images.append(gamma(reconstructed, 1))
+        mse[iterator] = mean_squared_error(picture, reconstructed)
+    else:
+        reconstructed = fragment
+        images.append(gamma(reconstructed, 1))
+        mse[iterator] = mean_squared_error(picture, reconstructed)
     iterator += 1
     imageio.mimsave(filename1, images)
     save_plot(iterator, mse, filename2)
