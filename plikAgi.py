@@ -40,11 +40,11 @@ def sinogram2picture(picture, sinogram, lines):
             #plot_images(picture, normalizing_picture(reconstructed, helper))
             images.append(normalizing_picture(reconstructed, helper))
      
-    normalized = normalizing_picture(reconstructed, helper)
-    images.append(normalizing_picture(reconstructed, helper))
+    reconstructed = normalizing_picture(reconstructed, helper)
+    images.append(reconstructed)
     imageio.mimsave('sin2pic.gif', images)
 
-    return normalized
+    return reconstructed
 
 def filtered_sinogram2picture(picture, sinogram, lines):
     
@@ -92,11 +92,11 @@ def filtered_sinogram2picture(picture, sinogram, lines):
     
     
     reconstructed = normalizing_picture(reconstructed, helper)
-    images.append(normalizing_picture(reconstructed, helper))
+    images.append(reconstructed)
     plot_images(picture,reconstructed)
     reconstructed[reconstructed[:,:] < 0] = 0
     reconstructed = filtering_picture(reconstructed)
-    images.append(normalizing_picture(reconstructed, helper))
+    images.append(reconstructed)
     imageio.mimsave('fil_sin2pic.gif', images)
     return reconstructed
 
@@ -128,7 +128,7 @@ def filtering_sinogram(sinogram):
 def filtering_picture(img) :
     #new = filters.median(img, disk(2))
     #new = filters.gaussian_filter(img, sigma=1)
-    perc = 5
+    perc = 10
     MIN = np.percentile(img, perc)
     MAX = np.percentile(img, 100-perc)
     new = normalizing(img, MIN, MAX)
@@ -138,7 +138,7 @@ def filtering_picture(img) :
     new = filters.gaussian_filter(img, sigma=1)
     # korekcja gamma
     gamma = 1/2.2
-    new = (new ** gamma)
+    #new = (new ** gamma)
 
     return new
 
