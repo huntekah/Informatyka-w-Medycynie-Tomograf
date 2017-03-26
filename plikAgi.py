@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import numpy as np
-from math import floor
+from math import floor, ceil
 from utils import bresenhams_line
 from matplotlib import pyplot as plt
 from skimage.morphology import disk
@@ -8,6 +8,7 @@ import skimage.morphology as mp
 from skimage import img_as_float, img_as_ubyte, filters
 import scipy.signal as sig
 import imageio
+from sklearn.metrics import mean_squared_error
 
 
 def sinogram2picture(picture, sinogram, lines):
@@ -16,11 +17,13 @@ def sinogram2picture(picture, sinogram, lines):
     width = picture_shape[0]
     height = picture_shape[1]
     
-    images = []
-    
     sinogram_shape = np.shape(sinogram)
     number_of_projections = sinogram_shape[0]
     number_of_detectors = sinogram_shape[1]
+    
+    images = []
+    iterator = 0
+    mse = np.zeros(ceil(number_of_projections/10)+1)
     
     reconstructed = np.zeros(shape = picture_shape)
     helper = np.zeros(shape = picture_shape)
@@ -37,11 +40,16 @@ def sinogram2picture(picture, sinogram, lines):
                         helper[int(x)][int(y)] += 1
          
         if (projection%10 == 0):
-            #plot_images(picture, normalizing_picture(reconstructed, helper))
-            images.append(normalizing_picture(reconstructed, helper))
+            fragment = normalizing_picture(reconstructed, helper)
+            images.append(fragment)
+            mse[iterator] = mean_squared_error(picture, fragment)
+            iterator += 1
      
     reconstructed = normalizing_picture(reconstructed, helper)
     images.append(reconstructed)
+    mse[iterator] = mean_squared_error(picture, reconstructed)
+    iterator += 1
+    save_plot(iterator, mse, 'mse_s2p')
     imageio.mimsave('sin2pic.gif', images)
 
     return reconstructed
@@ -52,11 +60,13 @@ def filtered_sinogram2picture(picture, sinogram, lines):
     width = picture_shape[0]
     height = picture_shape[1]
     
-    images = []
-    
     sinogram_shape = np.shape(sinogram)
     number_of_projections = sinogram_shape[0]
     number_of_detectors = sinogram_shape[1]
+    
+    images = []
+    iterator = 0
+    mse = np.zeros(ceil(number_of_projections/10)+2)
     
     reconstructed = np.zeros(shape = picture_shape)
     helper = np.zeros(shape = picture_shape)
@@ -85,19 +95,24 @@ def filtered_sinogram2picture(picture, sinogram, lines):
                         helper[int(x)][int(y)] += 1
         
         if (projection%10 == 0):
-            #plot_images(picture, normalizing_picture(reconstructed, helper))
             fragment = normalizing_picture(reconstructed, helper)
-            fragment[fragment[:,:] < 0] = 0
             images.append(fragment)
+            mse[iterator] = mean_squared_error(picture, fragment)
+            iterator += 1
     
     
     reconstructed = normalizing_picture(reconstructed, helper)
     images.append(reconstructed)
+    mse[iterator] = mean_squared_error(picture, reconstructed)
+    iterator += 1
     plot_images(picture,reconstructed)
     reconstructed[reconstructed[:,:] < 0] = 0
-    reconstructed = filtering_picture(reconstructed)
-    images.append(reconstructed)
+    #reconstructed = filtering_picture(reconstructed)
+    #images.append(reconstructed)
+    mse[iterator] = mean_squared_error(picture, reconstructed)
+    iterator += 1
     imageio.mimsave('fil_sin2pic.gif', images)
+    save_plot(iterator, mse, 'mse_fs2p')
     return reconstructed
 
 def filtering_sinogram(sinogram):
@@ -127,7 +142,11 @@ def filtering_sinogram(sinogram):
 
 def filtering_picture(img) :
     #new = filters.median(img, disk(2))
-    #new = filters.gaussian_filter(img, sigma=1)
+    new = filters.gaussian_filter(img, sigma=1)
+    # korekcja gamma
+    gamma = 1/2.2
+    new = (new ** gamma)
+    
     perc = 10
     MIN = np.percentile(img, perc)
     MAX = np.percentile(img, 100-perc)
@@ -135,10 +154,7 @@ def filtering_picture(img) :
     #new = normalizing(img, 0, 1)
     #new = mp.erosion(img)
     #new = filters.median(new, disk(2))
-    new = filters.gaussian_filter(img, sigma=1)
-    # korekcja gamma
-    gamma = 1/2.2
-    #new = (new ** gamma)
+    #new = filters.gaussian_filter(img, sigma=1)
 
     return new
 
@@ -196,3 +212,7 @@ def plot_diagram(img1, img2):
     plots[0].plot(range(np.shape(img1)[1]), img1[0])
     plots[1].plot(range(np.shape(img2)[1]), img2[0])
     plt.show()  
+    
+def save_plot(x, y, filename):
+    plt.plot(range(x), y)
+    plt.savefig(filename)  
