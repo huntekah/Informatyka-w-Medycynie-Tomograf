@@ -9,6 +9,7 @@ from skimage import img_as_float, img_as_ubyte, filters
 import scipy.signal as sig
 import imageio
 from sklearn.metrics import mean_squared_error
+from skimage.exposure import rescale_intensity, equalize_adapthist
 
 
 def sinogram2picture(picture, sinogram, lines):
@@ -57,9 +58,11 @@ def filtering_picture(img) :
     MAX = new.max()
     print("max ", MAX);
     MAX = 0.2
-    new = normalizing(new, MIN, MAX)
+    #new = normalizing(new, MIN, MAX)
+    new = rescale_intensity(new)
     new = mp.dilation(mp.erosion(new))
-    new = normalizing(new, MIN, MAX)
+    #new = normalizing(new, MIN, MAX)
+    
     """
     perc = 10
     MIN = np.percentile(new, perc)
@@ -72,6 +75,7 @@ def filtering_picture(img) :
     """
     #new = mp.dilation(mp.erosion(new))
     return new
+
 
 def gamma(img, gamma):
     new = img ** gamma
@@ -183,6 +187,7 @@ def sin2pic(picture, sinogram, lines, filename1, filename2, filtr):
         reconstructed[reconstructed[:,:] < 0] = 0
         reconstructed = filtering_picture(reconstructed)
     images.append(gamma(reconstructed, 0.3))
+    #images.append(reconstructed)
     mse[iterator] = mean_squared_error(picture, reconstructed)
     iterator += 1
     imageio.mimsave(filename1, images)
